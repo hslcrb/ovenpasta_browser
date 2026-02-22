@@ -14,7 +14,9 @@ public:
     OvenpastaViewImpl() {
         drawing_area = gtk_drawing_area_new();
         gtk_widget_set_size_request(drawing_area, 800, 2000); // Standard vertical scroll size request
+        gtk_widget_add_events(drawing_area, GDK_BUTTON_PRESS_MASK);
         g_signal_connect(drawing_area, "draw", G_CALLBACK(on_draw_cb), this);
+        g_signal_connect(drawing_area, "button-press-event", G_CALLBACK(on_button_press_cb), this);
     }
 
     GtkWidget* get_widget() const {
@@ -40,11 +42,12 @@ public:
 private:
     GtkWidget* drawing_area;
     std::shared_ptr<DOMNode> dom_root;
+    RenderContext render_ctx;
 
     static gboolean on_draw_cb(GtkWidget* widget, cairo_t* cr, gpointer data) {
         OvenpastaViewImpl* view = static_cast<OvenpastaViewImpl*>(data);
         if (view->dom_root) {
-            Renderer::render(cr, view->dom_root);
+            view->render_ctx = Renderer::render(cr, view->dom_root);
         } else {
             // Default background logic when no URL is loaded
             cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
@@ -55,6 +58,33 @@ private:
             cairo_set_font_size(cr, 16.0);
             cairo_move_to(cr, 10, 30);
             cairo_show_text(cr, "Welcome to Ovenpasta Embedded Widget!");
+        }
+        return FALSE;
+    }
+
+    static gboolean on_button_press_cb(GtkWidget* widget, GdkEventButton* event, gpointer data) {
+        OvenpastaViewImpl* view = static_cast<OvenpastaViewImpl*>(data);
+        
+        if (event->button == 1) { // Left click
+            double ex = event->x;
+            double ey = event->y;
+
+            for (const auto& link : view->render_ctx.links) {
+                if (ex >= link.x && ex <= link.x + link.width &&
+                    ey >= link.y && ey <= link.y + link.height) {
+                    
+                    std::cout << "[Ovenpasta] Clicked link: " << link.url << std::endl;
+                    // Properly resolving relative vs absolute URLs is omitted for brevity,
+                    // Assuming absolute URL or very simple path for this educational demo
+                    std::string target_url = link.url;
+                    if (target_url.find("http") != 0 && target_url.length() > 0) {
+                        // Very naive absolute path fallback just for demo purposes
+                        target_url = "http://" + target_url; 
+                    }
+                    view->load_url(target_url);
+                    return TRUE; // Event handled
+                }
+            }
         }
         return FALSE;
     }

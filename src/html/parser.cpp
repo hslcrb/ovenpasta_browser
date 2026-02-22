@@ -61,7 +61,41 @@ shared_ptr<DOMNode> HtmlParser::parse(const string& html) {
             auto node = DOMNode::createElement(tag_name);
             stack.back()->children.push_back(node);
 
-            // Rough attributes parsing (skipped for simplicity in this basic version)
+            // Parse attributes if there is space after tag name
+            if (space_pos != string::npos) {
+                string attrs_str = tag_content.substr(space_pos);
+                size_t p = 0;
+                while (p < attrs_str.length()) {
+                    // skip whitespace
+                    while (p < attrs_str.length() && std::isspace(attrs_str[p])) p++;
+                    if (p >= attrs_str.length()) break;
+
+                    size_t eq_pos = attrs_str.find('=', p);
+                    if (eq_pos == string::npos) break; // no more key=value
+
+                    string key = attrs_str.substr(p, eq_pos - p);
+                    
+                    p = eq_pos + 1;
+                    if (p < attrs_str.length() && (attrs_str[p] == '"' || attrs_str[p] == '\'')) {
+                        char quote = attrs_str[p];
+                        p++;
+                        size_t end_quote = attrs_str.find(quote, p);
+                        if (end_quote != string::npos) {
+                            string value = attrs_str.substr(p, end_quote - p);
+                            node->attributes[key] = value;
+                            p = end_quote + 1;
+                        } else {
+                            break; // malformed
+                        }
+                    } else {
+                        // Unquoted attribute value
+                        size_t space_end = attrs_str.find_first_of(" \t\n\r/>", p);
+                        string value = attrs_str.substr(p, space_end == string::npos ? string::npos : space_end - p);
+                        node->attributes[key] = value;
+                        p = (space_end == string::npos) ? attrs_str.length() : space_end;
+                    }
+                }
+            }
 
             bool is_self_closing_tag = tag_content.back() == '/' || is_self_closing(tag_name);
 

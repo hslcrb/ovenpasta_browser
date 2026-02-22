@@ -3,6 +3,7 @@
 
 #include <gtk/gtk.h>
 #include <string>
+#include <vector>
 
 class BrowserWindow {
 public:
@@ -22,8 +23,13 @@ private:
     GtkWidget* drawing_area;
 
     static void on_go_clicked(GtkWidget* widget, gpointer data);
+    static void on_back_clicked(GtkWidget* widget, gpointer data);
     
     void load_url(const std::string& url);
+
+private:
+    std::vector<std::string> history;
+    int history_index = -1;
 };
 
 #endif // BROWSER_WINDOW_HPP

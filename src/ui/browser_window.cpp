@@ -17,6 +17,7 @@ BrowserWindow::BrowserWindow() {
 
     btn_back = gtk_button_new_with_label("Back");
     gtk_box_pack_start(GTK_BOX(hbox_nav), btn_back, FALSE, FALSE, 0);
+    g_signal_connect(btn_back, "clicked", G_CALLBACK(on_back_clicked), this);
 
     entry_url = gtk_entry_new();
     gtk_box_pack_start(GTK_BOX(hbox_nav), entry_url, TRUE, TRUE, 0);
@@ -51,7 +52,34 @@ void BrowserWindow::on_go_clicked(GtkWidget* widget, gpointer data) {
     std::string url(url_cstr);
     if (!url.empty()) {
         std::cout << "Navigating to: " << url << std::endl;
+        
+        // Push to history
+        if (browser->history_index < 0 || browser->history[browser->history_index] != url) {
+            // Truncate forward history if we diverge
+            if (browser->history_index + 1 < browser->history.size()) {
+                browser->history.resize(browser->history_index + 1);
+            }
+            browser->history.push_back(url);
+            browser->history_index++;
+        }
+        
         browser->load_url(url);
+    }
+}
+
+void BrowserWindow::on_back_clicked(GtkWidget* widget, gpointer data) {
+    BrowserWindow* browser = static_cast<BrowserWindow*>(data);
+    if (browser->history_index > 0) {
+        browser->history_index--;
+        std::string prev_url = browser->history[browser->history_index];
+        std::cout << "Going Back to: " << prev_url << std::endl;
+        
+        // Update the UI entry to show where we went back to
+        gtk_entry_set_text(GTK_ENTRY(browser->entry_url), prev_url.c_str());
+        
+        browser->load_url(prev_url);
+    } else {
+        std::cout << "No history to go back to." << std::endl;
     }
 }
 
