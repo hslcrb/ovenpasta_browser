@@ -3,8 +3,6 @@
 
 #include <gtk/gtk.h>
 #include <string>
-#include <memory>
-#include "html/dom_node.hpp"
 
 class BrowserWindow {
 public:
@@ -24,11 +22,8 @@ private:
     GtkWidget* drawing_area;
 
     static void on_go_clicked(GtkWidget* widget, gpointer data);
-    static gboolean on_draw(GtkWidget* widget, cairo_t* cr, gpointer data);
     
     void load_url(const std::string& url);
-
-    std::shared_ptr<DOMNode> dom_root;
 };
 
 #endif // BROWSER_WINDOW_HPP

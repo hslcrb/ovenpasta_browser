@@ -9,10 +9,27 @@ pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 
 include_directories(${GTK3_INCLUDE_DIRS})
 include_directories(src)
+include_directories(include)
 link_directories(${GTK3_LIBRARY_DIRS})
 
-# Collect source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+# Library sources (Engine)
+file(GLOB_RECURSE LIB_SOURCES
+    "src/html/*.cpp"
+    "src/network/*.cpp"
+    "src/render/*.cpp"
+    "src/api/*.cpp"
+)
 
-add_executable(ovenpasta ${SOURCES})
-target_link_libraries(ovenpasta ${GTK3_LIBRARIES})
+# Application sources (CLI/App wrapper)
+file(GLOB APP_SOURCES 
+    "src/main.cpp"
+    "src/ui/*.cpp"
+)
+
+# Build the embeddable library
+add_library(ovenpasta_lib STATIC ${LIB_SOURCES})
+target_link_libraries(ovenpasta_lib ${GTK3_LIBRARIES})
+
+# Build the example web browser executable
+add_executable(ovenpasta ${APP_SOURCES})
+target_link_libraries(ovenpasta ovenpasta_lib ${GTK3_LIBRARIES})

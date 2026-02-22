@@ -1,10 +1,8 @@
 #include "browser_window.hpp"
-#include "network/http_client.hpp"
-#include "html/parser.hpp"
-#include "render/renderer.hpp"
+#include "ovenpasta/ovenpasta_view.hpp"
 #include <iostream>
 
-BrowserWindow::BrowserWindow() : dom_root(nullptr) {
+BrowserWindow::BrowserWindow() {
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Ovenpasta");
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
@@ -34,10 +32,9 @@ BrowserWindow::BrowserWindow() : dom_root(nullptr) {
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
 
-    drawing_area = gtk_drawing_area_new();
-    gtk_widget_set_size_request(drawing_area, 800, 2000); // Initial size request
+    // Initialize the embedded Ovenpasta view widget
+    drawing_area = ovenpasta_view_new();
     gtk_container_add(GTK_CONTAINER(scrolled_window), drawing_area);
-    g_signal_connect(drawing_area, "draw", G_CALLBACK(on_draw), this);
 }
 
 BrowserWindow::~BrowserWindow() {
@@ -58,40 +55,7 @@ void BrowserWindow::on_go_clicked(GtkWidget* widget, gpointer data) {
     }
 }
 
-gboolean BrowserWindow::on_draw(GtkWidget* widget, cairo_t* cr, gpointer data) {
-    BrowserWindow* browser = static_cast<BrowserWindow*>(data);
-    
-    if (browser->dom_root) {
-        Renderer::render(cr, browser->dom_root);
-    } else {
-        // Fill background with white
-        cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-        cairo_paint(cr);
-
-        // Placeholder text
-        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-        cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-        cairo_set_font_size(cr, 16.0);
-        cairo_move_to(cr, 10, 30);
-        cairo_show_text(cr, "Welcome to Ovenpasta Browser. Enter a URL to start.");
-    }
-
-    return FALSE;
-}
-
 void BrowserWindow::load_url(const std::string& url) {
-    HttpResponse response = HttpClient::get(url);
-    if (response.success) {
-        std::cout << "Fetched " << url << " (Status " << response.status_code << ", " << response.body.length() << " bytes)" << std::endl;
-        dom_root = HtmlParser::parse(response.body);
-    } else {
-        std::cout << "Failed to fetch " << url << std::endl;
-        dom_root = DOMNode::createElement("html");
-        auto body = DOMNode::createElement("body");
-        dom_root->children.push_back(body);
-        body->children.push_back(DOMNode::createText("Failed to load URL. Note that HTTPS is not supported. Use http://..."));
-    }
-    
-    // Force redraw
-    gtk_widget_queue_draw(drawing_area);
+    // Delegate to the Library API
+    ovenpasta_view_load_url(drawing_area, url.c_str());
 }
