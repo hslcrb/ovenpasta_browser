@@ -1,0 +1,25 @@
+# Build directory
+build/
+bin/
+lib/
+*.o
+*.a
+*.so
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Executable output
+ovenpasta
